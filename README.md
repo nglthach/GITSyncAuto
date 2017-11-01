@@ -9,7 +9,7 @@ Run
 ```
 for the help
 
-If your computer does not have BeautifulSoup, run this command to install (debian* distros):
+If your computer does not have BeautifulSoup, run this command to install (debian* distro):
 ```
 sudo apt install python3-bs4
 ```
