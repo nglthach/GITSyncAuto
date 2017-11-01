@@ -36,8 +36,10 @@ class HttpRequest(Thread):
 
     def do_request(self, url, depth=0):
         time.sleep(self.delay_between_each_call)
+
         self.lock.acquire()
-        print('Requesting..', url)
+        if not self.stop:
+            print('Requesting..', url)
         self.lock.release()
 
         if not self.stop:
@@ -109,7 +111,10 @@ for i in range(num_of_thread):
     request.start()
 
 # Wait for all requests finished
-for request in requests:
-    request.join()
+try:
+    for request in requests:
+        request.join()
+except KeyboardInterrupt:
+    HttpRequest.stop = True
 
 input('Done.. Press ENTER to exit...')
