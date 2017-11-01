@@ -110,8 +110,8 @@ for i in range(num_of_thread):
     requests.append(request)
     request.start()
 
-# Wait for all requests finished
 try:
+    # Wait for all requests finished
     for request in requests:
         request.join()
 except KeyboardInterrupt:
