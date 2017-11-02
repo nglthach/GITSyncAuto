@@ -33,6 +33,7 @@ def print_result(out, p):
 arg_parser = ArgumentParser()
 arg_parser.add_argument('--delay', action='store_true', type=int)
 args = arg_parser.parse_args()
+delay = args.delay if args.delay else 5
 # Get git credentials
 username = input('GIT Username: ')
 password = getpass.getpass('GIT Password: ')
@@ -65,4 +66,4 @@ while True:
             break
 
     # Sleep awhile before next run
-    time.sleep(args.delay if args.delay else 5)
+    time.sleep(delay)
