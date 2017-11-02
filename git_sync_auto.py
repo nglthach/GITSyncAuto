@@ -31,7 +31,7 @@ def print_result(out, p):
 
 # Parse the arguments
 arg_parser = ArgumentParser()
-arg_parser.add_argument('--delay', action='store_true', type=int)
+arg_parser.add_argument('--delay', type=int)
 args = arg_parser.parse_args()
 delay = args.delay if args.delay else 5
 # Get git credentials
