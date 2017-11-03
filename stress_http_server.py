@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import time
 import curses
 import argparse
@@ -10,7 +11,7 @@ import colorama
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from threading import Thread
-from colorama import Fore
+from colorama import Fore, Back, Style
 
 
 class HttpRequest(Thread):
@@ -68,8 +69,8 @@ class HttpRequest(Thread):
     def print_status(url):
         HttpRequest.lock.acquire()
         HttpRequest.requested_count = HttpRequest.requested_count + 1
-        print(pos_escape(1, 0) + Fore.GREEN + 'Requested: ' + str(HttpRequest.requested_count).rjust(10) + '    -    ' + Fore.RED + 'Error: ' + str(HttpRequest.error_count).rjust(10))
-        print(pos_escape((HttpRequest.requested_count - 1) % 10 + 2, 0) + Fore.WHITE + 'Requesting..' + url, end='\n\r')
+        print_with_color(1, 0, Fore.GREEN, 'Requested: ' + str(HttpRequest.requested_count).rjust(10) + '    -    ' + Fore.RED + 'Error: ' + str(HttpRequest.error_count).rjust(10))
+        print_with_color((HttpRequest.requested_count - 1) % 10 + 2, 0, Fore.WHITE, 'Requesting..' + url, end='\n\r')
         HttpRequest.lock.release()
 
     @staticmethod
@@ -85,6 +86,7 @@ class HttpRequest(Thread):
         anchor_tags = html_parser.find_all('a')
         for tag in anchor_tags:
             url = urljoin(base_url, tag.get('href')).split('#')[0]
+            url.rstrip(r'/')
             try:
                 result.index(url)
             except ValueError:
@@ -104,6 +106,11 @@ def pos_escape(y, x):
 
 def clear_screen():
     print('\033[2J')
+
+
+def print_with_color(row, col, color, text, end=''):
+    print(pos_escape(row, col) + color + text, Style.RESET_ALL, end=end)
+    sys.stdout.flush()
 
 
 # Init screen handler
@@ -145,9 +152,9 @@ except KeyboardInterrupt:
     HttpRequest.stop = True
 
 if HttpRequest.requested_count >= 9:
-    print(pos_escape(12, 0) + Fore.YELLOW + 'Done..Press ENTER to exit...', end='\n\r')
+    print_with_color(12, 0, Fore.YELLOW, 'Done..Press ENTER to exit...')
 else:
-    print(pos_escape((HttpRequest.requested_count % 10) + 3, 0) + Fore.YELLOW + 'Done..Press ENTER to exit...', end='\n\r')
+    print_with_color((HttpRequest.requested_count % 10) + 3, 0, Fore.YELLOW, 'Done..Press ENTER to exit...')
 
 stdscr.getkey()
 curses.endwin()
