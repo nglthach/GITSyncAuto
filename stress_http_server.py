@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
 
 import time
+import curses
 import argparse
 import httplib2
 import _thread
+import colorama
 
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from threading import Thread
+from colorama import Fore
 
 
 class HttpRequest(Thread):
     stop = False
     request_depth = 0
     lock = _thread.allocate_lock()
+    requested_count = 0
+    error_count = 0
 
     def __init__(self, url, max_request, do_like_a_spider, stop_on_error, delay_between_each_call, username, password):
         self.url = url
@@ -31,18 +36,14 @@ class HttpRequest(Thread):
 
     def run(self):
         for i in range(self.max_request):
-            if not self.do_request(self.url) or self.stop:
+            if not self.do_request(self.url) and self.stop:
                 break
 
     def do_request(self, url, depth=0):
         time.sleep(self.delay_between_each_call)
 
-        self.lock.acquire()
         if not self.stop:
-            print('Requesting..', url)
-        self.lock.release()
-
-        if not self.stop:
+            self.print_status(url)
             http = httplib2.Http()
             if len(self.username) > 0 and len(self.password) > 0:
                 http.add_credentials(self.username, self.password)
@@ -55,12 +56,27 @@ class HttpRequest(Thread):
                             self.do_request(link, depth + 1)
             except:
                 if self.stop_on_error:
+                    self.inc_error()
                     self.stop = True
                 return False
 
             return True
         else:
             return False
+
+    @staticmethod
+    def print_status(url):
+        HttpRequest.lock.acquire()
+        HttpRequest.requested_count = HttpRequest.requested_count + 1
+        print(pos_escape(1, 0) + Fore.GREEN + 'Requested: ' + str(HttpRequest.requested_count).rjust(10) + '    -    ' + Fore.RED + 'Error: ' + str(HttpRequest.error_count).rjust(10))
+        print(pos_escape((HttpRequest.requested_count - 1) % 10 + 2, 0) + Fore.WHITE + 'Requesting..' + url, end='\n\r')
+        HttpRequest.lock.release()
+
+    @staticmethod
+    def inc_error():
+        HttpRequest.lock.acquire()
+        HttpRequest.error_count = HttpRequest.error_count + 1
+        HttpRequest.lock.release()
 
     @staticmethod
     def get_links(html, base_url, root_url):
@@ -82,6 +98,18 @@ class HttpRequest(Thread):
         return result
 
 
+def pos_escape(y, x):
+    return '\x1b[%d;%dH' % (y, x)
+
+
+def clear_screen():
+    print('\033[2J')
+
+
+# Init screen handler
+stdscr = curses.initscr()
+stdscr.refresh()
+colorama.init()
 # Parse the arguments
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument('--num_of_thread', help='Num of thread', type=int)
@@ -104,7 +132,6 @@ password = args.password if args.password else ''
 url = args.url
 # Run..
 requests = []
-HttpRequest.stop = False
 for i in range(num_of_thread):
     request = HttpRequest(url, max_request_per_thread, do_like_a_spider, stop_on_error, delay_between_each_call, username, password)
     requests.append(request)
@@ -115,6 +142,15 @@ try:
     for request in requests:
         request.join()
 except KeyboardInterrupt:
+    for request in requests:
+        if request.is_alive():
+            request.stop = True
     HttpRequest.stop = True
 
-input('Done.. Press ENTER to exit...')
+if HttpRequest.requested_count >= 9:
+    print(pos_escape(12, 0) + Fore.YELLOW + 'Done..Press ENTER to exit...', end='\n\r')
+else:
+    print(pos_escape((HttpRequest.requested_count % 10) + 3, 0) + Fore.YELLOW + 'Done..Press ENTER to exit...', end='\n\r')
+
+stdscr.getkey()
+curses.endwin()
