@@ -36,13 +36,13 @@ class HttpRequest(Thread):
 
     def run(self):
         for i in range(self.max_request):
-            if not self.do_request(self.url) and self.stop:
+            if (not self.do_request(self.url) and self.stop_on_error) or HttpRequest.stop:
                 break
 
     def do_request(self, url, depth=0):
         time.sleep(self.delay_between_each_call)
 
-        if not self.stop:
+        if not HttpRequest.stop:
             self.print_status(url)
             http = httplib2.Http()
             if len(self.username) > 0 and len(self.password) > 0:
@@ -55,9 +55,9 @@ class HttpRequest(Thread):
                         if depth <= self.request_depth:
                             self.do_request(link, depth + 1)
             except:
+                self.inc_error()
                 if self.stop_on_error:
-                    self.inc_error()
-                    self.stop = True
+                    HttpRequest.stop = True
                 return False
 
             return True
@@ -142,9 +142,6 @@ try:
     for request in requests:
         request.join()
 except KeyboardInterrupt:
-    for request in requests:
-        if request.is_alive():
-            request.stop = True
     HttpRequest.stop = True
 
 if HttpRequest.requested_count >= 9:
