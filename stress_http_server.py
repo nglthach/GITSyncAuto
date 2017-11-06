@@ -50,11 +50,10 @@ class HttpRequest(Thread):
                 http.add_credentials(self.username, self.password)
             try:
                 header, content = http.request(url)
-                if self.do_like_a_spider:
+                if self.do_like_a_spider and depth <= self.request_depth:
                     links = self.get_links(content.decode(), url, self.root_url)
                     for link in links:
-                        if depth <= self.request_depth:
-                            self.do_request(link, depth + 1)
+                        self.do_request(link, depth + 1)
             except:
                 self.inc_error()
                 if self.stop_on_error:
